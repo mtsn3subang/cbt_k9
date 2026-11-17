@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>E-Ujian MTsN 3 Subang</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+body{font-family:Inter,sans-serif;overscroll-behavior-y:contain;-webkit-user-select:none;user-select:none}
+input{-webkit-user-select:text;user-select:text}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.animate-shake{animation:shake .5s both}
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased overflow-x-hidden">
+
+<!-- 1. LAYAR AWAL -->
+<div id="start-screen" class="min-h-dvh flex flex-col justify-center bg-gradient-to-br from-indigo-900 via-blue-900 to-slate-900 p-4">
+  <div class="max-w-lg w-full mx-auto text-center text-white mb-4">
+    <div class="inline-flex w-14 h-14 rounded-2xl bg-white/10 border border-white/20 items-center justify-center mb-3"><i data-lucide="shield-check" class="w-8 h-8 text-cyan-400"></i></div>
+    <p class="text-xs font-semibold tracking-wider uppercase text-cyan-300">E-Ujian MTsN 3 Subang</p>
+    <h1 id="exam-title" class="text-2xl font-extrabold mt-1">Ujian Online Terawasi</h1>
+  </div>
+  <div class="max-w-lg w-full mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden">
+    <div class="bg-amber-50 border-b border-amber-200 px-5 py-3 flex items-center gap-3">
+      <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600 shrink-0"></i>
+      <p class="text-sm font-semibold text-amber-950">Batas toleransi: maksimal <span id="max-text" class="text-red-600">7</span> kali keluar halaman<span id="dur-text"></span></p>
+    </div>
+    <div class="p-5 space-y-4 text-sm text-slate-600">
+      <ul class="space-y-2 list-disc pl-5">
+        <li><strong>Dilarang berpindah aplikasi</strong> (WhatsApp, browser lain, split-screen, tombol Home, tarik notifikasi). Semuanya tercatat.</li>
+        <li><strong>Memuat ulang halaman</strong> atau menekan tombol Kembali juga dihitung pelanggaran.</li>
+        <li><strong>Otomatis terkunci</strong> jika mencapai batas. Segera lapor ke pengawas.</li>
+      </ul>
+      <div class="bg-blue-50 border border-blue-200 rounded-2xl p-3 text-xs text-blue-950 space-y-1.5">
+        <p class="font-bold uppercase tracking-wider text-blue-800">Kunci layar HP (wajib)</p>
+        <p><strong>Android:</strong> Recent Apps &rarr; ketuk ikon browser &rarr; <strong>Sematkan / Pin</strong>.</p>
+        <p><strong>iPhone:</strong> Pengaturan &gt; Aksesibilitas &gt; Akses Terpandu &rarr; aktifkan, lalu tekan tombol samping/Home 3x.</p>
+        <label class="flex items-start gap-2 pt-2 border-t border-blue-200 cursor-pointer">
+          <input type="checkbox" id="pin-check" class="mt-0.5 w-4 h-4">
+          <span class="font-semibold">Saya sudah mengaktifkan kunci layar dan siap diawasi.</span>
+        </label>
+      </div>
+      <div>
+        <label for="student-name" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Nama Lengkap &amp; Kelas <span class="text-red-500">*</span></label>
+        <input id="student-name" type="text" placeholder="Contoh: Budi Santoso - 9A" class="w-full px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+      <p id="start-error" class="hidden text-xs font-semibold text-red-600"></p>
+      <button id="btn-start" disabled class="w-full py-4 rounded-2xl font-bold bg-slate-300 text-slate-500 cursor-not-allowed">MULAI UJIAN</button>
+    </div>
+  </div>
+  <div class="max-w-lg w-full mx-auto text-center mt-4">
+    <button id="btn-admin" class="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-cyan-200 text-xs border border-white/15">Mode Guru: Buat Link Ujian</button>
+  </div>
+</div>
+
+<!-- 2. LAYAR UJIAN -->
+<div id="exam-screen" class="hidden flex-col h-dvh w-full bg-slate-100">
+  <header class="h-[60px] bg-slate-900 text-white px-3 flex items-center justify-between shrink-0 z-30" style="padding-top:env(safe-area-inset-top,0)">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></div>
+      <div class="truncate">
+        <p id="display-name" class="text-xs sm:text-sm font-bold truncate">Peserta</p>
+        <p class="text-[11px] font-mono text-cyan-300"><span id="timer-label">Berjalan</span> <span id="exam-timer">00:00:00</span></p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 shrink-0">
+      <div id="violation-badge" class="px-2.5 py-1.5 rounded-xl border text-xs font-extrabold flex items-center gap-1.5"><i data-lucide="shield-alert" class="w-3.5 h-3.5"></i><span><span id="violation-count">0</span> / <span id="violation-max">7</span></span></div>
+      <button id="btn-fs" title="Layar penuh" class="p-2 rounded-xl bg-slate-800 border border-slate-700"><i data-lucide="maximize" class="w-4 h-4"></i></button>
+      <button id="btn-finish" title="Selesai" class="px-2.5 py-2 rounded-xl bg-emerald-600 text-xs font-bold">Selesai</button>
+    </div>
+  </header>
+  <div id="fs-banner" class="hidden bg-amber-500 text-slate-950 px-3 py-1.5 text-xs font-semibold items-center justify-between">
+    <span>Mode layar penuh nonaktif.</span>
+    <button id="btn-fs2" class="px-2.5 py-0.5 bg-slate-900 text-white rounded-lg text-[11px] font-bold">Layar Penuh</button>
+  </div>
+  <main class="relative flex-1 bg-white overflow-hidden">
+    <div id="loader" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-10 transition-opacity">
+      <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
+      <p class="text-sm font-semibold text-slate-600">Memuat lembar soal...</p>
+    </div>
+    <iframe id="form-iframe" src="about:blank" class="w-full h-full border-0"></iframe>
+    <button id="btn-help" class="absolute bottom-4 right-4 z-20 w-10 h-10 rounded-full bg-slate-900/85 text-white flex items-center justify-center"><i data-lucide="help-circle" class="w-5 h-5"></i></button>
+  </main>
+</div>
+
+<!-- 3. PERINGATAN -->
+<div id="warning-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md items-center justify-center p-4">
+  <div id="warning-card" class="max-w-md w-full bg-white rounded-3xl overflow-hidden border-2 border-red-500">
+    <div class="bg-gradient-to-r from-red-600 to-rose-600 p-5 text-center text-white">
+      <h2 class="text-xl font-black uppercase">Peringatan Pelanggaran!</h2>
+      <p id="warn-title" class="text-red-100 text-sm font-bold mt-1"></p>
+    </div>
+    <div class="p-6 text-center space-y-4">
+      <p id="warn-reason" class="text-sm text-slate-700"></p>
+      <div class="bg-red-50 border border-red-200 rounded-2xl p-3.5">
+        <p class="text-xs font-bold uppercase text-red-500">Sisa toleransi</p>
+        <p id="warn-remaining" class="text-2xl font-black text-red-700"></p>
+      </div>
+      <button id="btn-dismiss" class="w-full py-3.5 bg-slate-900 text-white font-bold text-sm rounded-xl">SAYA MENGERTI &amp; LANJUTKAN</button>
+    </div>
+  </div>
+</div>
+
+<!-- 4. TERKUNCI / SELESAI -->
+<div id="locked-screen" class="hidden fixed inset-0 z-50 bg-gradient-to-b from-red-950 to-slate-950 text-white overflow-y-auto p-5">
+  <div class="max-w-md mx-auto text-center space-y-5 py-8">
+    <button id="secret-lock" class="w-24 h-24 rounded-3xl bg-red-600/20 border-2 border-red-500/50 flex items-center justify-center mx-auto"><i data-lucide="lock" class="w-12 h-12 text-red-400"></i></button>
+    <h1 id="lock-title" class="text-3xl font-black">UJIAN TERKUNCI</h1>
+    <p id="lock-desc" class="text-red-200 text-sm"></p>
+    <div class="bg-black/40 border border-red-500/30 rounded-2xl p-4 text-left space-y-2 text-sm">
+      <div class="flex justify-between"><span class="text-red-300/80">Peserta</span><span id="lock-name" class="font-bold text-right"></span></div>
+      <div class="flex justify-between"><span class="text-red-300/80">Pelanggaran</span><span id="lock-count" class="font-bold text-red-400"></span></div>
+      <div class="flex justify-between"><span class="text-red-300/80">Waktu</span><span id="lock-time" class="font-mono"></span></div>
+    </div>
+    <p id="lock-instr" class="bg-amber-500/10 border border-amber-400/30 rounded-2xl p-4 text-xs text-amber-200">Jangan tutup atau muat ulang halaman ini. Angkat tangan dan lapor kepada pengawas.</p>
+    <div id="unlock-panel" class="hidden bg-slate-900 border border-slate-700 rounded-2xl p-4 space-y-3 text-left">
+      <p class="text-xs font-bold uppercase text-cyan-400">Otorisasi Pengawas</p>
+      <div class="flex gap-2">
+        <input id="unlock-pin" type="password" inputmode="numeric" placeholder="PIN pengawas" class="flex-1 px-3 py-2.5 bg-slate-800 border border-slate-600 rounded-xl text-sm font-mono text-white">
+        <button id="btn-unlock" class="px-4 py-2.5 bg-cyan-600 text-white font-bold text-xs rounded-xl">BUKA</button>
+      </div>
+      <p id="unlock-err" class="hidden text-xs text-red-400 font-semibold"></p>
+    </div>
+    <button id="secret-text" class="text-[11px] text-white/30">Panel pengawas (ketuk 5x gembok)</button>
+  </div>
+</div>
+
+<!-- 5. BANTUAN -->
+<div id="help-modal" class="hidden fixed inset-0 z-40 bg-slate-900/75 items-center justify-center p-4">
+  <div class="max-w-sm w-full bg-white rounded-3xl p-5 space-y-3 text-sm text-slate-600">
+    <h3 class="font-bold text-slate-800">Bantuan Teknis</h3>
+    <p><strong>Diminta login Google?</strong> Masukkan akun langsung di dalam formulir. Jangan membuka Gmail atau aplikasi lain.</p>
+    <p><strong>Layar tidak penuh?</strong> Ketuk ikon kotak di kanan atas (tidak tersedia di iPhone, gunakan Akses Terpandu).</p>
+    <p><strong>Selesai?</strong> Kirim formulir sampai muncul konfirmasi, lalu ketuk tombol hijau <strong>Selesai</strong>.</p>
+    <button id="btn-help-close" class="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-xl">Tutup</button>
+  </div>
+</div>
+
+<!-- 6. MODE GURU -->
+<div id="admin-modal" class="hidden fixed inset-0 z-50 bg-slate-950/85 items-center justify-center p-4 overflow-y-auto">
+  <div class="max-w-md w-full bg-white rounded-3xl overflow-hidden my-auto">
+    <div class="bg-slate-900 text-white px-5 py-4 flex justify-between items-center">
+      <h3 class="font-bold text-sm">Generator Link Ujian (Guru)</h3>
+      <button id="btn-admin-close" class="text-slate-400">Tutup</button>
+    </div>
+    <div class="p-5 space-y-3 text-sm">
+      <div><label class="block text-xs font-bold uppercase text-slate-500 mb-1">Judul ujian</label>
+        <input id="a-title" type="text" placeholder="PAS Matematika Kelas 9" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl"></div>
+      <div><label class="block text-xs font-bold uppercase text-slate-500 mb-1">Link Google Form *</label>
+        <input id="a-form" type="url" placeholder="https://docs.google.com/forms/d/e/.../viewform" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+        <p class="text-[11px] text-slate-500 mt-1">Pakai link panjang <em>docs.google.com/forms/...</em> (buka link forms.gle di browser lalu salin alamat akhirnya). Link pendek forms.gle sering gagal tampil.</p></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs font-bold uppercase text-slate-500 mb-1">Batas pelanggaran</label>
+          <select id="a-max" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl"><option>3</option><option>5</option><option selected>7</option><option>10</option></select></div>
+        <div><label class="block text-xs font-bold uppercase text-slate-500 mb-1">Durasi (menit)</label>
+          <input id="a-dur" type="number" min="0" placeholder="0 = bebas" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl"></div>
+      </div>
+      <div><label class="block text-xs font-bold uppercase text-slate-500 mb-1">PIN pengawas (min. 6 angka) *</label>
+        <input id="a-pin" type="password" inputmode="numeric" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono">
+        <p class="text-[11px] text-slate-500 mt-1">PIN tidak ditulis di link, hanya sidik jarinya (hash). Jangan dibagikan ke siswa.</p></div>
+      <div><label class="block text-xs font-bold uppercase text-slate-500 mb-1">URL log Apps Script (opsional)</label>
+        <input id="a-log" type="url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl"></div>
+      <p id="a-err" class="hidden text-xs text-red-600 font-semibold"></p>
+      <button id="btn-gen" class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl">BUAT LINK UJIAN</button>
+      <div id="a-result" class="hidden space-y-2">
+        <div class="flex gap-2"><input id="a-out" readonly class="flex-1 px-3 py-2 bg-white border border-emerald-300 rounded-xl text-xs font-mono">
+          <button id="btn-copy" class="px-3.5 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl">Salin</button></div>
+        <p class="text-[11px] text-emerald-700">Pastikan file ini sudah di-hosting (GitHub Pages, Netlify, dll) agar bisa dibuka dari HP siswa.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+lucide.createIcons();
+const $ = id => document.getElementById(id);
+const show = (id, d="flex") => { $(id).classList.remove("hidden"); if (d) $(id).classList.add(d); };
+const hide = id => { $(id).classList.add("hidden"); $(id).classList.remove("flex"); };
+
+const CFG = { form: "", title: "Ujian Online Terawasi", max: 7, dur: 0, ph: "", log: "" };
+const COOLDOWN = 1500;
+const SALT = "mtsn3-subang";
+let KEY = "exam_state_v2";
+let S = { active: false, locked: false, finished: false, name: "", violations: 0, last: 0, startedAt: 0, reasons: [] };
+let tick = null, taps = 0, tapT = null, wake = null, audio = null;
+const FS_OK = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
+  && !/iPhone|iPod/.test(navigator.userAgent);
+
+// ---------- Util ----------
+async function hashPin(pin) {
+  const enc = new TextEncoder();
+  const k = await crypto.subtle.importKey("raw", enc.encode(pin), "PBKDF2", false, ["deriveBits"]);
+  const b = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: enc.encode(SALT), iterations: 100000 }, k, 256);
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("");
+}
+function normalizeForm(u) {
+  try {
+    const url = new URL(u);
+    if (url.hostname === "docs.google.com" && url.pathname.includes("/forms/") && url.pathname.endsWith("/viewform"))
+      url.searchParams.set("embedded", "true");
+    return url.toString();
+  } catch { return ""; }
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} }
+function sendLog(event, extra = {}) {
+  if (!CFG.log) return;
+  try {
+    navigator.sendBeacon(CFG.log, JSON.stringify({ event, name: S.name, form: CFG.title, violations: S.violations,
+      time: new Date().toISOString(), ...extra }));
+  } catch {}
+}
+const fmt = s => [Math.floor(s / 3600), Math.floor(s % 3600 / 60), s % 60].map(n => String(Math.max(0, n)).padStart(2, "0")).join(":");
+
+// ---------- Init ----------
+window.addEventListener("DOMContentLoaded", () => {
+  const p = new URLSearchParams(location.search);
+  CFG.form = normalizeForm(p.get("form") || "");
+  CFG.title = (p.get("title") || CFG.title).trim();
+  const mx = parseInt(p.get("max"), 10); if (mx >= 1 && mx <= 20) CFG.max = mx;
+  const du = parseInt(p.get("dur"), 10); if (du > 0 && du <= 600) CFG.dur = du;
+  CFG.ph = /^[0-9a-f]{64}$/.test(p.get("ph") || "") ? p.get("ph") : "";
+  CFG.log = (p.get("log") || "").startsWith("https://") ? p.get("log") : "";
+
+  $("exam-title").textContent = CFG.title;
+  $("max-text").textContent = CFG.max;
+  $("violation-max").textContent = CFG.max;
+  if (CFG.dur) $("dur-text").textContent = `, durasi ${CFG.dur} menit`;
+
+  if (!CFG.form || !CFG.ph) {
+    $("start-error").textContent = "Link ujian tidak lengkap. Minta link resmi dari guru.";
+    $("start-error").classList.remove("hidden");
+  }
+  KEY = "exam_state_v2_" + btoa(unescape(encodeURIComponent(CFG.form))).slice(-24);
+  setupListeners();
+  restore();
+});
+
+function restore() {
+  try {
+    const raw = localStorage.getItem(KEY); if (!raw) return;
+    S = { ...S, ...JSON.parse(raw) };
+  } catch { return; }
+  if (S.finished) return lock("SELESAI", "Ujian sudah dikirim dan ditutup pada perangkat ini.", false);
+  if (S.locked || S.violations >= CFG.max) return lock();
+  if (S.active) {
+    // Muat ulang halaman saat ujian berjalan dihitung pelanggaran
+    enterExam();
+    registerViolation("Halaman dimuat ulang / ditutup");
+  }
+}
+
+// ---------- Mulai ----------
+function updateStartBtn() {
+  const ok = $("pin-check").checked && CFG.form && CFG.ph;
+  const b = $("btn-start");
+  b.disabled = !ok;
+  b.className = ok ? "w-full py-4 rounded-2xl font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg"
+                   : "w-full py-4 rounded-2xl font-bold bg-slate-300 text-slate-500 cursor-not-allowed";
+  b.textContent = ok ? "MULAI UJIAN SEKARANG" : "CENTANG KONFIRMASI DULU";
+}
+$("pin-check").addEventListener("change", updateStartBtn);
+
+$("btn-start").addEventListener("click", () => {
+  const name = $("student-name").value.trim();
+  if (name.length < 3) { $("start-error").textContent = "Isi nama lengkap dan kelas."; $("start-error").classList.remove("hidden"); return; }
+  S = { active: true, locked: false, finished: false, name, violations: 0, last: 0, startedAt: Date.now(), reasons: [] };
+  save();
+  initAudio(); fullscreen(); keepAwake();
+  sendLog("mulai");
+  enterExam();
+});
+
+function enterExam() {
+  hide("start-screen");
+  show("exam-screen");
+  $("display-name").textContent = S.name;
+  $("violation-max").textContent = CFG.max;
+  updateBadge();
+  const f = $("form-iframe");
+  if (!f.src.startsWith("http")) {
+    f.onload = () => { $("loader").classList.add("opacity-0"); setTimeout(() => $("loader").classList.add("hidden"), 300); };
+    f.src = CFG.form;
+  }
+  history.pushState({ x: 1 }, "", location.href);
+  if (CFG.dur) $("timer-label").textContent = "Sisa";
+  clearInterval(tick); tick = setInterval(onTick, 1000); onTick();
+  checkFs();
+}
+
+function onTick() {
+  if (!S.active) return;
+  const el = Math.floor((Date.now() - S.startedAt) / 1000);
+  if (CFG.dur) {
+    const left = CFG.dur * 60 - el;
+    $("exam-timer").textContent = fmt(left);
+    if (left <= 0) timeUp();
+  } else $("exam-timer").textContent = fmt(el);
+}
+function timeUp() {
+  S.finished = true; S.active = false; save(); sendLog("waktu_habis");
+  lock("WAKTU HABIS", "Waktu ujian telah berakhir. Pastikan jawaban Anda sudah terkirim, lalu lapor kepada pengawas.", false);
+}
+
+// ---------- Deteksi ----------
+function setupListeners() {
+  const live = () => S.active && !S.locked;
+  document.addEventListener("visibilitychange", () => {
+    if (!live()) return;
+    if (document.hidden) registerViolation("Tab/aplikasi disembunyikan"); else keepAwake();
+  });
+  window.addEventListener("pagehide", () => { if (live()) { S.last = 0; save(); } });
+  window.addEventListener("blur", () => setTimeout(() => {
+    if (live() && !document.hidden && document.activeElement?.tagName !== "IFRAME") registerViolation("Layar ujian kehilangan fokus");
+  }, 200));
+  window.addEventListener("popstate", () => { if (live()) { history.pushState({ x: 1 }, "", location.href); registerViolation("Tombol Kembali ditekan"); } });
+  document.addEventListener("fullscreenchange", () => {
+    checkFs();
+    if (live() && FS_OK && !document.fullscreenElement && !document.webkitFullscreenElement) registerViolation("Keluar dari layar penuh");
+  });
+  document.addEventListener("contextmenu", e => { if (S.active) e.preventDefault(); });
+  document.addEventListener("keydown", e => {
+    if (!S.active) return;
+    const k = e.key.toUpperCase();
+    if (e.key === "F12" || (e.ctrlKey && e.shiftKey && "IJC".includes(k)) || (e.ctrlKey && "USP".includes(k))) e.preventDefault();
+  });
+  window.addEventListener("beforeunload", e => { if (S.active && !S.locked) { e.preventDefault(); e.returnValue = ""; } });
+
+  $("btn-fs").onclick = $("btn-fs2").onclick = fullscreen;
+  $("btn-dismiss").onclick = () => { hide("warning-modal"); fullscreen(); keepAwake(); };
+  $("btn-help").onclick = () => show("help-modal");
+  $("btn-help-close").onclick = () => hide("help-modal");
+  $("btn-finish").onclick = finishExam;
+  $("secret-lock").onclick = $("secret-text").onclick = secretTap;
+  $("btn-unlock").onclick = tryUnlock;
+  $("unlock-pin").addEventListener("keydown", e => { if (e.key === "Enter") tryUnlock(); });
+  $("btn-admin").onclick = () => { show("admin-modal"); };
+  $("btn-admin-close").onclick = () => hide("admin-modal");
+  $("btn-gen").onclick = generateLink;
+  $("btn-copy").onclick = () => {
+    const i = $("a-out"); i.select();
+    (navigator.clipboard ? navigator.clipboard.writeText(i.value) : Promise.resolve(document.execCommand("copy")))
+      .then(() => { $("btn-copy").textContent = "Tersalin!"; setTimeout(() => $("btn-copy").textContent = "Salin", 2000); });
+  };
+}
+
+function registerViolation(reason) {
+  const now = Date.now();
+  if (now - S.last < COOLDOWN) return;
+  S.last = now; S.violations++; S.reasons.push(reason); save();
+  playAlarm(); navigator.vibrate?.([300, 100, 300]);
+  updateBadge(); sendLog("pelanggaran", { reason });
+  if (S.violations >= CFG.max) return lock();
+  $("warn-title").textContent = `Pelanggaran ke-${S.violations} dari ${CFG.max}`;
+  $("warn-reason").textContent = `Terdeteksi: ${reason}.`;
+  $("warn-remaining").textContent = `${CFG.max - S.violations} kali lagi`;
+  show("warning-modal");
+  const c = $("warning-card"); c.classList.remove("animate-shake"); void c.offsetWidth; c.classList.add("animate-shake");
+}
+
+function updateBadge() {
+  $("violation-count").textContent = S.violations;
+  const r = S.violations / CFG.max;
+  $("violation-badge").className = "px-2.5 py-1.5 rounded-xl border text-xs font-extrabold flex items-center gap-1.5 " +
+    (S.violations === 0 ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+     : r <= 0.5 ? "bg-amber-500/25 border-amber-400/50 text-amber-300"
+     : "bg-red-600/40 border-red-400 text-red-200 animate-pulse");
+}
+
+// ---------- Kunci / Selesai ----------
+function lock(title = "UJIAN TERKUNCI", desc, isViolation = true) {
+  if (isViolation) { S.locked = true; sendLog("terkunci"); }
+  S.active = false; save(); clearInterval(tick);
+  $("form-iframe").src = "about:blank";
+  ["warning-modal", "exam-screen", "start-screen", "help-modal"].forEach(hide);
+  $("lock-title").textContent = title;
+  $("lock-desc").textContent = desc || `Anda melampaui batas ${CFG.max} kali meninggalkan halaman ujian. Lembar soal dihapus dari layar.`;
+  $("lock-name").textContent = S.name || "-";
+  $("lock-count").textContent = `${S.violations} / ${CFG.max}`;
+  $("lock-time").textContent = new Date().toLocaleTimeString("id-ID", { hour12: false });
+  $("lock-instr").classList.toggle("hidden", !isViolation);
+  show("locked-screen", null); $("locked-screen").classList.remove("hidden");
+}
+
+function finishExam() {
+  if (!confirm("Yakin sudah mengirim jawaban dan ingin menyelesaikan ujian? Anda tidak bisa kembali ke soal.")) return;
+  S.finished = true; S.active = false; save(); sendLog("selesai");
+  document.exitFullscreen?.().catch(() => {});
+  lock("UJIAN SELESAI", "Terima kasih. Jawaban Anda sudah ditutup di perangkat ini.", false);
+}
+
+function secretTap() {
+  clearTimeout(tapT);
+  if (++taps >= 5) { taps = 0; $("unlock-panel").classList.remove("hidden"); $("unlock-pin").focus(); }
+  else tapT = setTimeout(() => taps = 0, 2000);
+}
+
+let pinTries = 0, pinBlock = 0;
+async function tryUnlock() {
+  const err = $("unlock-err");
+  if (Date.now() < pinBlock) { err.textContent = "Terlalu banyak percobaan. Tunggu sebentar."; err.classList.remove("hidden"); return; }
+  const h = await hashPin($("unlock-pin").value.trim());
+  if (h === CFG.ph) {
+    pinTries = 0; err.classList.add("hidden"); $("unlock-pin").value = "";
+    $("unlock-panel").classList.add("hidden");
+    if (S.finished) { S.finished = false; }
+    S.violations = 0; S.locked = false; S.active = true; S.reasons = [];
+    if (CFG.dur) S.startedAt = S.startedAt || Date.now();
+    save(); sendLog("dibuka_pengawas");
+    hide("locked-screen"); $("form-iframe").src = "about:blank";
+    enterExam(); fullscreen(); keepAwake();
+  } else {
+    if (++pinTries >= 3) { pinBlock = Date.now() + 30000; pinTries = 0; sendLog("pin_salah_berulang"); }
+    err.textContent = "PIN salah."; err.classList.remove("hidden");
+  }
+}
+
+// ---------- Fullscreen, wake lock, audio ----------
+function fullscreen() {
+  if (!FS_OK) return;
+  const e = document.documentElement;
+  if (!document.fullscreenElement && !document.webkitFullscreenElement)
+    (e.requestFullscreen ? e.requestFullscreen() : e.webkitRequestFullscreen())?.catch?.(() => {});
+}
+function checkFs() {
+  const full = document.fullscreenElement || document.webkitFullscreenElement;
+  const b = $("fs-banner");
+  const need = FS_OK && S.active && !S.locked && !full;
+  b.classList.toggle("hidden", !need); b.classList.toggle("flex", need);
+}
+async function keepAwake() { try { if ("wakeLock" in navigator) wake = await navigator.wakeLock.request("screen"); } catch {} }
+function initAudio() {
+  const A = window.AudioContext || window.webkitAudioContext;
+  if (!audio && A) audio = new A();
+  audio?.state === "suspended" && audio.resume();
+}
+function playAlarm() {
+  try {
+    initAudio(); if (!audio) return;
+    const t = audio.currentTime;
+    [0, 0.22].forEach(o => {
+      const osc = audio.createOscillator(), g = audio.createGain();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(880, t + o); osc.frequency.exponentialRampToValueAtTime(440, t + o + .18);
+      g.gain.setValueAtTime(.3, t + o); g.gain.exponentialRampToValueAtTime(.01, t + o + .18);
+      osc.connect(g); g.connect(audio.destination); osc.start(t + o); osc.stop(t + o + .18);
+    });
+  } catch {}
+}
+
+// ---------- Generator link guru ----------
+async function generateLink() {
+  const err = $("a-err"), form = $("a-form").value.trim(), pin = $("a-pin").value.trim();
+  err.classList.add("hidden");
+  const fail = m => { err.textContent = m; err.classList.remove("hidden"); };
+  if (!/^https?:\/\//.test(form)) return fail("Isi link Google Form yang valid.");
+  if (!/^\d{6,}$/.test(pin)) return fail("PIN pengawas minimal 6 angka.");
+  if (/forms\.gle/.test(form)) return fail("Link forms.gle sering gagal ditampilkan. Gunakan link panjang docs.google.com/forms/...");
+  const u = new URL(location.origin + location.pathname);
+  u.searchParams.set("form", form);
+  const t = $("a-title").value.trim(); if (t) u.searchParams.set("title", t);
+  if ($("a-max").value !== "7") u.searchParams.set("max", $("a-max").value);
+  const d = parseInt($("a-dur").value, 10); if (d > 0) u.searchParams.set("dur", d);
+  const lg = $("a-log").value.trim(); if (lg) u.searchParams.set("log", lg);
+  u.searchParams.set("ph", await hashPin(pin));
+  $("a-out").value = u.toString();
+  $("a-result").classList.remove("hidden");
+}
+</script>
+</body>
+</html>
